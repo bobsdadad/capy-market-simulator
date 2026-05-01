@@ -1,0 +1,1102 @@
+\<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none';">
+<title>🦫 CapyMarket — Memecoin Trading Terminal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0802;--surface:#14100a;--card:#1c1610;--border:#2e2208;
+  --acc:#d4892e;--text:#f0ddb8;--muted:#7a6440;
+  --green:#3ddb7a;--red:#f06060;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Courier New',Courier,monospace;font-size:12px}
+#app{display:flex;flex-direction:column;height:100vh}
+
+/* HEADER */
+#header{background:var(--surface);border-bottom:1px solid var(--border);padding:6px 12px;display:flex;align-items:center;gap:12px;flex-shrink:0;height:44px}
+#logo{font-size:17px;font-weight:700;color:var(--acc);letter-spacing:1px;white-space:nowrap;text-shadow:0 0 12px rgba(212,137,46,.4)}
+#ticker-wrap{flex:1;overflow:hidden;position:relative}
+#ticker-track{display:flex;gap:18px;white-space:nowrap;will-change:transform}
+.tick-item{font-size:11px}
+.hdr-stat{text-align:right;white-space:nowrap}
+.hdr-label{font-size:9px;color:var(--muted);letter-spacing:.5px}
+.hdr-val{font-size:13px;font-weight:700}
+#sentiment-box{display:flex;align-items:center;gap:5px;flex-shrink:0}
+#sent-label{font-size:9px;letter-spacing:1px;min-width:30px;text-align:right}
+#sent-bar-bg{width:52px;height:5px;background:#2e2208;border-radius:3px;overflow:hidden}
+#sent-bar{height:100%;border-radius:3px;transition:width .6s,background .6s}
+
+/* BODY */
+#body{display:flex;flex:1;overflow:hidden;min-height:0}
+
+/* SIDEBAR */
+#sidebar{width:210px;background:#0f0c06;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0}
+#sidebar::-webkit-scrollbar{width:4px}
+#sidebar::-webkit-scrollbar-thumb{background:var(--border)}
+.sb-head{padding:5px 10px;font-size:9px;color:var(--muted);letter-spacing:1px;border-bottom:1px solid var(--border)}
+.coin-row{padding:7px 10px;border-bottom:1px solid #1a1408;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:2px 0;transition:background .12s;border-left:2px solid transparent}
+.coin-row:hover{background:#1a1408}
+.coin-row.active{background:#1e1a0c;border-left-color:var(--acc)}
+.cr-name{font-size:11px;font-weight:700;color:var(--text)}
+.cr-sub{font-size:9px;color:var(--muted)}
+.cr-price{font-size:11px;font-weight:700;text-align:right}
+.cr-chg{font-size:9px;text-align:right}
+.cr-spark{grid-column:1/-1;height:22px;margin-top:2px}
+
+/* MAIN */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#chart-area{flex:1;padding:10px 12px 6px;display:flex;flex-direction:column;min-height:0;gap:6px}
+#coin-hdr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#coin-title{font-size:18px;font-weight:700;color:var(--acc)}
+#coin-fullname{font-size:11px;color:var(--muted)}
+#coin-price-big{font-size:20px;font-weight:700;margin-left:4px}
+#coin-badges{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+.badge{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700}
+#chart-canvas-wrap{flex:1;position:relative;min-height:0}
+#chartCanvas{width:100%;height:100%;display:block}
+#chart-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.stat-box{background:var(--card);border-radius:6px;padding:6px 8px;border:1px solid var(--border)}
+.stat-label{font-size:9px;color:var(--muted);margin-bottom:2px;letter-spacing:.5px}
+.stat-val{font-size:11px;font-weight:700;color:var(--acc)}
+
+/* ORDER PANEL */
+#order-panel{background:var(--surface);border-top:1px solid var(--border);padding:8px 12px;flex-shrink:0}
+#order-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.tabs{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.tab{padding:5px 14px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;border:none;transition:background .12s}
+.tab-buy-active{background:#0d2e1a;color:var(--green)}
+.tab-sell-active{background:#2e0d0d;color:var(--red)}
+.tab-inactive{background:#1a1408;color:var(--muted)}
+input[type=number],input[type=text]{background:#1e1a0c;border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 8px;font-size:11px;font-family:inherit;outline:none}
+input[type=number]{width:110px}
+input[type=number]:focus,input[type=text]:focus{border-color:var(--acc)}
+select{background:#1e1a0c;border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 7px;font-size:10px;font-family:inherit;outline:none;cursor:pointer}
+.btn{padding:5px 14px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:opacity .12s}
+.btn:hover{opacity:.82}
+.btn-buy{background:#0d2e1a;color:var(--green);border:1px solid #1a5c30}
+.btn-sell{background:#2e0d0d;color:var(--red);border:1px solid #5c1a1a}
+.btn-max{background:#1e1a0c;color:var(--acc);border:1px solid var(--border);padding:5px 8px}
+/* MAX active state — glows to show dynamic mode is on */
+.btn-max.max-active{background:#2e2010;color:var(--acc);border-color:var(--acc);box-shadow:0 0 6px rgba(212,137,46,.4)}
+.btn-limit{background:#1a1228;color:#a78bfa;border:1px solid #3d2e6e;padding:5px 10px;position:relative}
+#limit-badge{position:absolute;top:-5px;right:-5px;background:#a78bfa;color:#0a0802;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;display:none}
+#preview{font-size:10px;color:var(--muted)}
+/* MAX mode indicator */
+#max-mode-label{font-size:9px;color:var(--acc);display:none;align-items:center;gap:3px}
+
+/* HOLDINGS BAR */
+#holdings-bar{padding:5px 12px;background:#0f0c06;border-top:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:6px;overflow-x:auto;min-height:28px}
+#holdings-bar::-webkit-scrollbar{height:3px}
+#holdings-bar::-webkit-scrollbar-thumb{background:var(--border)}
+.hold-chip{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:2px 8px;white-space:nowrap;font-size:10px;color:#b89a60;flex-shrink:0}
+
+/* NEWS */
+#news-panel{background:#080601;border-top:1px solid var(--border);padding:5px 12px;max-height:80px;overflow-y:auto;flex-shrink:0}
+#news-panel::-webkit-scrollbar{width:3px}
+#news-panel::-webkit-scrollbar-thumb{background:var(--border)}
+.news-title{font-size:9px;color:var(--acc);letter-spacing:1px;margin-bottom:3px}
+.news-item{display:flex;gap:5px;margin-bottom:2px;font-size:10px;line-height:1.4}
+.news-arrow{flex-shrink:0}
+
+/* ═══ ALERT MODAL (errors/confirmations) ═══ */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center}
+#modal-overlay.show{display:flex}
+#modal{background:var(--surface);border:1px solid var(--acc);border-radius:10px;padding:20px 24px;min-width:260px;text-align:center}
+#modal h2{color:var(--acc);font-size:16px;margin-bottom:8px}
+#modal p{font-size:12px;color:var(--text);margin-bottom:14px;line-height:1.6}
+#modal-close{padding:6px 20px;background:var(--acc);color:#0a0802;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-family:inherit;font-size:12px}
+
+/* ═══ LIMIT ORDERS MODAL ═══ */
+#lo-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:150;align-items:flex-start;justify-content:center;padding-top:40px}
+#lo-overlay.show{display:flex}
+#lo-modal{background:#0f0c06;border:1px solid #3d2e6e;border-radius:12px;width:560px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;overflow:hidden}
+#lo-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+#lo-title{font-size:14px;font-weight:700;color:#a78bfa}
+#lo-close{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;font-family:inherit;padding:2px 6px}
+#lo-close:hover{color:var(--text)}
+#lo-body{display:flex;flex-direction:column;gap:0;overflow:hidden;flex:1}
+
+/* Place order form */
+#lo-form{padding:14px 16px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lo-field{display:flex;flex-direction:column;gap:4px}
+.lo-field.full{grid-column:1/-1}
+.lo-label{font-size:9px;color:var(--muted);letter-spacing:.5px}
+.lo-input{background:#1a1408;border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:11px;font-family:inherit;outline:none;width:100%}
+.lo-input:focus{border-color:#a78bfa}
+.lo-select{background:#1a1408;border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:11px;font-family:inherit;outline:none;cursor:pointer;width:100%}
+.lo-hint{font-size:9px;color:var(--muted);margin-top:2px}
+#lo-submit{grid-column:1/-1;padding:8px;background:#1a1228;color:#a78bfa;border:1px solid #3d2e6e;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .12s}
+#lo-submit:hover{opacity:.82}
+
+/* Active orders list */
+#lo-orders-wrap{flex:1;overflow-y:auto;padding:10px 16px}
+#lo-orders-wrap::-webkit-scrollbar{width:4px}
+#lo-orders-wrap::-webkit-scrollbar-thumb{background:var(--border)}
+.lo-orders-head{font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:8px}
+.lo-order-row{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px;display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:center}
+.lo-order-main{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lo-order-type{font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px}
+.type-buy-limit{background:#0d2e1a;color:var(--green)}
+.type-stop-loss{background:#2e0d0d;color:var(--red)}
+.lo-order-coin{font-size:11px;font-weight:700;color:var(--acc)}
+.lo-order-detail{font-size:10px;color:var(--muted)}
+.lo-order-expires{font-size:9px;color:var(--muted);text-align:right}
+.lo-cancel-btn{background:#1e0d0d;border:1px solid #5c1a1a;color:var(--red);border-radius:4px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:inherit;font-weight:700}
+.lo-cancel-btn:hover{opacity:.8}
+#lo-empty{font-size:11px;color:var(--muted);text-align:center;padding:20px 0}
+
+/* Fill notification flash */
+#fill-toast{position:fixed;bottom:100px;right:16px;z-index:300;background:#0d2e1a;border:1px solid var(--green);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--green);max-width:280px;opacity:0;transform:translateY(10px);transition:opacity .3s,transform .3s;pointer-events:none}
+#fill-toast.show{opacity:1;transform:translateY(0)}
+#fill-toast.red{background:#2e0d0d;border-color:var(--red);color:var(--red)}
+
+#capy-corner{position:fixed;bottom:90px;right:12px;font-size:8px;line-height:1.2;color:rgba(212,137,46,.12);pointer-events:none;white-space:pre;z-index:1}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div id="logo">🦫 CAPYMARKET</div>
+    <div id="ticker-wrap"><div id="ticker-track"></div></div>
+    <div id="sentiment-box">
+      <div id="sent-label" style="color:var(--green)">BULL</div>
+      <div id="sent-bar-bg"><div id="sent-bar" style="width:60%;background:var(--green)"></div></div>
+    </div>
+    <div class="hdr-stat"><div class="hdr-label">PORTFOLIO</div><div class="hdr-val" id="hdr-total">$10,000.00</div></div>
+    <div class="hdr-stat"><div class="hdr-label">BALANCE</div><div class="hdr-val" style="color:var(--acc)" id="hdr-balance">$10,000.00</div></div>
+    <div class="hdr-stat"><div class="hdr-label">P&amp;L</div><div class="hdr-val" id="hdr-pnl">$0.00 (0.00%)</div></div>
+  </div>
+
+  <div id="body">
+    <div id="sidebar">
+      <div class="sb-head">MARKET — 12 COINS</div>
+      <div id="coin-list"></div>
+    </div>
+    <div id="main">
+      <div id="chart-area">
+        <div id="coin-hdr">
+          <div id="coin-title">CAPY</div>
+          <div id="coin-fullname">CapyCoin</div>
+          <div id="coin-price-big">$0.4200</div>
+          <div id="coin-badges"></div>
+        </div>
+        <div id="chart-canvas-wrap"><canvas id="chartCanvas"></canvas></div>
+        <div id="chart-stats">
+          <div class="stat-box"><div class="stat-label">24H HIGH</div><div class="stat-val" id="stat-high">—</div></div>
+          <div class="stat-box"><div class="stat-label">24H LOW</div><div class="stat-val" id="stat-low">—</div></div>
+          <div class="stat-box"><div class="stat-label">COST BASIS</div><div class="stat-val" id="stat-basis">—</div></div>
+          <div class="stat-box"><div class="stat-label">HOLDING VALUE</div><div class="stat-val" id="stat-holdval">$0.00</div></div>
+        </div>
+      </div>
+      <div id="order-panel">
+        <div id="order-row">
+          <div class="tabs">
+            <button class="tab tab-buy-active" id="tab-buy" onclick="setMode('buy')">BUY</button>
+            <button class="tab tab-inactive" id="tab-sell" onclick="setMode('sell')">SELL</button>
+          </div>
+          <input type="number" id="order-amt" placeholder="Amount" min="0" max="1000000000000" step="any" oninput="onAmtInput()" />
+          <select id="order-unit" onchange="onUnitChange()">
+            <option value="usd">USD</option>
+            <option value="coin" id="unit-coin">CAPY</option>
+          </select>
+          <button class="btn btn-max" id="max-btn" onclick="toggleMax()">MAX</button>
+          <span id="max-mode-label">⚡ AUTO-MAX</span>
+          <span id="preview"></span>
+          <button class="btn btn-limit" id="limit-btn" onclick="openLimitModal()">
+            📋 LIMIT ORDERS
+            <span id="limit-badge"></span>
+          </button>
+          <button class="btn btn-buy" id="order-btn" onclick="doOrder()">BUY CAPY</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="holdings-bar">
+    <span style="font-size:9px;color:var(--muted);letter-spacing:.5px;white-space:nowrap;flex-shrink:0">◼ HOLDINGS:</span>
+    <span id="holdings-empty" style="font-size:10px;color:var(--muted)">No positions yet — ape in!</span>
+  </div>
+
+  <div id="news-panel">
+    <div class="news-title">⚡ CAPY NEWS TERMINAL</div>
+    <div id="news-list"></div>
+  </div>
+</div>
+
+<!-- Alert modal -->
+<div id="modal-overlay">
+  <div id="modal">
+    <h2 id="modal-title">🦫 CapyMarket</h2>
+    <p id="modal-body"></p>
+    <button id="modal-close" onclick="closeModal()">OK LET'S TRADE</button>
+  </div>
+</div>
+
+<!-- Limit orders modal -->
+<div id="lo-overlay" onclick="closeLimitModalOutside(event)">
+  <div id="lo-modal">
+    <div id="lo-header">
+      <div id="lo-title">📋 LIMIT ORDERS</div>
+      <button id="lo-close" onclick="closeLimitModal()">✕</button>
+    </div>
+    <div id="lo-body">
+      <!-- Place order form -->
+      <div id="lo-form">
+        <div class="lo-field">
+          <div class="lo-label">ORDER TYPE</div>
+          <select class="lo-select" id="lo-type" onchange="updateLoHint()">
+            <option value="buy-limit">🟢 Buy Limit — buy when price drops to</option>
+            <option value="stop-loss">🔴 Stop-Loss — sell when price falls to</option>
+          </select>
+        </div>
+        <div class="lo-field">
+          <div class="lo-label">COIN</div>
+          <select class="lo-select" id="lo-coin"></select>
+        </div>
+        <div class="lo-field">
+          <div class="lo-label">TARGET PRICE (USD)</div>
+          <input class="lo-input" type="number" id="lo-price" placeholder="0.00000" min="0" step="any" oninput="updateLoHint()"/>
+          <div class="lo-hint" id="lo-hint">—</div>
+        </div>
+        <div class="lo-field">
+          <div class="lo-label" id="lo-amt-label">SPEND AMOUNT (USD)</div>
+          <input class="lo-input" type="number" id="lo-amt" placeholder="100.00" min="0" step="any"/>
+        </div>
+        <div class="lo-field">
+          <div class="lo-label">EXPIRES IN</div>
+          <select class="lo-select" id="lo-expiry">
+            <option value="30">30 seconds</option>
+            <option value="120" selected>2 minutes</option>
+            <option value="300">5 minutes</option>
+            <option value="600">10 minutes</option>
+            <option value="1800">30 minutes</option>
+          </select>
+        </div>
+        <div class="lo-field" style="justify-content:flex-end">
+          <div class="lo-label">&nbsp;</div>
+          <div class="lo-hint" id="lo-balance-hint" style="color:var(--acc)"></div>
+        </div>
+        <button id="lo-submit" onclick="placeOrder()">PLACE ORDER</button>
+      </div>
+      <!-- Active orders -->
+      <div id="lo-orders-wrap">
+        <div class="lo-orders-head">ACTIVE ORDERS</div>
+        <div id="lo-order-list"></div>
+        <div id="lo-empty">No active orders. Place one above!</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Fill toast notification -->
+<div id="fill-toast"></div>
+
+<div id="capy-corner">  /\_____/\
+ /  o   o  \
+( ==  ^  == )
+ )         (
+(           )
+ \  \_|_/  /
+  \_______/</div>
+
+<script>
+// ─── SAFE DOM HELPERS ─────────────────────────────────────────────────────────
+function safeText(s){ return document.createTextNode(String(s)); }
+function el(tag,attrs,...kids){
+  const e=document.createElement(tag);
+  if(attrs) Object.entries(attrs).forEach(([k,v])=>{
+    if(k==='style'&&typeof v==='object') Object.assign(e.style,v);
+    else if(k==='className') e.className=v;
+    else e.setAttribute(k,v);
+  });
+  kids.forEach(c=>{
+    if(c==null) return;
+    e.appendChild(typeof c==='string'||typeof c==='number'?safeText(c):c);
+  });
+  return e;
+}
+const MAX_TRADE=1e12;
+function safeAmt(raw){
+  const n=parseFloat(raw);
+  if(!isFinite(n)||isNaN(n)||n<=0||n>MAX_TRADE) return null;
+  return n;
+}
+
+// ─── COIN DATA ────────────────────────────────────────────────────────────────
+const COINS=[
+  {id:'CAPY', name:'CapyCoin',     price:0.4200,   vol:0.060,color:'#d4892e'},
+  {id:'DOGE', name:'Dogecoin',     price:0.1234,   vol:0.055,color:'#c2a633'},
+  {id:'SHIB', name:'Shiba Inu',    price:0.0000180, vol:0.090,color:'#e85d04'},
+  {id:'PEPE', name:'Pepe',         price:0.0000123, vol:0.120,color:'#3d9a3f'},
+  {id:'BONK', name:'Bonk',         price:0.0000280, vol:0.110,color:'#f97316'},
+  {id:'FLOKI',name:'Floki Inu',    price:0.000172,  vol:0.100,color:'#a78bfa'},
+  {id:'WIF',  name:'dogwifhat',    price:2.3400,    vol:0.070,color:'#22d3ee'},
+  {id:'POPCAT',name:'Popcat',      price:0.847,     vol:0.130,color:'#f472b6'},
+  {id:'MOG',  name:'Mog Coin',     price:0.0000024, vol:0.150,color:'#c084fc'},
+  {id:'BRETT',name:'Brett',        price:0.118,     vol:0.100,color:'#60a5fa'},
+  {id:'NEIRO',name:'Neiro',        price:0.00082,   vol:0.140,color:'#fb923c'},
+  {id:'TURBO',name:'Turbo',        price:0.00412,   vol:0.120,color:'#34d399'},
+];
+const NEWS_POOL=[
+  {t:"Capybara spotted photobombing Bloomberg terminal — $CAPY mooning",c:'CAPY',i:0.14},
+  {t:"Elon posts DOGE meme. 4th time this week. Classic.",c:'DOGE',i:0.20},
+  {t:"SHIB army burns 8 trillion tokens in ritual bonfire",c:'SHIB',i:0.16},
+  {t:"PEPE frog appears on Times Square billboard — community explodes",c:'PEPE',i:0.22},
+  {t:"Capybara elected honorary treasurer of the BONK DAO",c:'BONK',i:0.19},
+  {t:"SEC chair spotted petting a capybara — bullish signal?",c:null,i:0.06},
+  {t:"FLOKI announces Valhalla game launch — 'probably not a rug'",c:'FLOKI',i:0.15},
+  {t:"WIF hat found on Mars rover camera — $WIF breaks ATH",c:'WIF',i:0.18},
+  {t:"Federal Reserve prints another $2 trillion — memecoins celebrate",c:null,i:0.08},
+  {t:"Massive whale dumps spotted on chain — markets spooked",c:null,i:-0.13},
+  {t:"Crypto Twitter: everyone calling the bottom simultaneously",c:null,i:-0.04},
+  {t:"POPCAT breaks 10 million daily pops — new world record",c:'POPCAT',i:0.25},
+  {t:"MOG cat army overtakes SHIB telegram in members",c:'MOG',i:0.30},
+  {t:"Capybara meditates peacefully in hot spring — markets find zen",c:null,i:0.04},
+  {t:"BRETT spotted at Coachella VIP section — cult status confirmed",c:'BRETT',i:0.20},
+  {t:"NEIRO vs SHIB war sparks 300% volume spike",c:'NEIRO',i:0.17},
+  {t:"TURBO AI predicts its own pump — self-fulfilling prophecy",c:'TURBO',i:0.24},
+  {t:"Regulatory FUD wave spreading from Capitol Hill",c:null,i:-0.10},
+  {t:"Mystery exchange listing rumor for $CAPY — source: a capybara",c:'CAPY',i:0.30},
+  {t:"Bitcoin breaks ATH — altcoins follow like excited puppies",c:null,i:0.12},
+  {t:"Influencer shills DOGE to 40M followers — accidental pump",c:'DOGE',i:0.28},
+  {t:"Exchange hacked — markets panic. FUD at maximum levels.",c:null,i:-0.18},
+  {t:"Capybara becomes mascot of unnamed Latin American country",c:'CAPY',i:0.35},
+  {t:"BlackRock files ETF for obscure memecoin",c:null,i:0.15},
+  {t:"Liquidity crunch — leveraged longs liquidated en masse",c:null,i:-0.22},
+  {t:"AI trading bot accidentally buys entire PEPE supply",c:'PEPE',i:0.40},
+];
+
+const HIST_LEN=120;
+const STATE={
+  coins: COINS.map(c=>({...c,curPrice:c.price,initPrice:c.price,chgPct:0,prevPrice:c.price})),
+  histories: {},
+  portfolio: {balance:10000, holdings:{}, costBasis:{}},
+  selected: 'CAPY',
+  mode: 'buy',
+  sentiment: 0.02,
+  sentAge: 0,
+  tick: 0,
+  tickerOffset: 0,
+  orderLock: false,
+  // ── MAX MODE: when true, buy always spends full current balance at exec time
+  maxMode: false,
+  // ── LIMIT ORDERS
+  limitOrders: [],   // {id, type, coinId, targetPrice, usdAmt, expiresAt, placedAt}
+  nextOrderId: 1,
+};
+
+COINS.forEach(c=>{
+  let p=c.price;
+  const arr=[];
+  for(let i=0;i<HIST_LEN;i++){ p*=(1+(Math.random()-.5)*.04); arr.push(Math.max(p*.7,p)); }
+  arr[arr.length-1]=c.price;
+  STATE.histories[c.id]=arr;
+});
+
+// ─── FORMATTERS ───────────────────────────────────────────────────────────────
+function fmtP(p){
+  if(!isFinite(p)) return '—';
+  if(p<0.000001) return p.toExponential(2);
+  if(p<0.0001)   return p.toFixed(8);
+  if(p<0.01)     return p.toFixed(6);
+  if(p<1)        return p.toFixed(4);
+  return p.toFixed(3);
+}
+function fmtUSD(n){
+  if(!isFinite(n)) return '$—';
+  const a=Math.abs(n),s=n<0?'-':'';
+  if(a>=1e9) return s+'$'+(a/1e9).toFixed(2)+'B';
+  if(a>=1e6) return s+'$'+(a/1e6).toFixed(2)+'M';
+  if(a>=1000)return s+'$'+(a/1000).toFixed(2)+'K';
+  return s+'$'+a.toFixed(2);
+}
+function fmtAmt(n){
+  if(!isFinite(n)||n===0) return '0';
+  if(n<0.00001) return n.toExponential(3);
+  if(n<0.01)    return n.toFixed(6);
+  if(n<100)     return n.toFixed(4);
+  return n.toFixed(2);
+}
+function fmtSecs(s){
+  if(s>=3600) return (s/3600).toFixed(1)+'h';
+  if(s>=60)   return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';
+  return s+'s';
+}
+
+// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
+function buildSidebar(){
+  const list=document.getElementById('coin-list');
+  list.innerHTML='';
+  STATE.coins.forEach(c=>{
+    const up=c.curPrice>=c.prevPrice;
+    const hist=STATE.histories[c.id]||[];
+    const sparkWrap=el('div',{className:'cr-spark'});
+    sparkWrap.innerHTML=buildSparkSVG(hist.slice(-24),c.color,up);
+    const row=el('div',{className:'coin-row'+(c.id===STATE.selected?' active':''),id:'cr-'+c.id},
+      el('div',{className:'cr-name'},c.id),
+      el('div',{className:'cr-price',id:'crp-'+c.id,style:{color:up?'var(--green)':'var(--red)'}},'$'+fmtP(c.curPrice)),
+      el('div',{className:'cr-sub'},c.name),
+      el('div',{className:'cr-chg',id:'crc-'+c.id,style:{color:c.chgPct>=0?'var(--green)':'var(--red)'}},
+        (c.chgPct>=0?'+':'')+c.chgPct.toFixed(2)+'%'),
+      sparkWrap
+    );
+    row.onclick=()=>selectCoin(c.id);
+    list.appendChild(row);
+  });
+}
+function buildSparkSVG(data,color,up){
+  if(data.length<2)return '';
+  const W=188,H=22;
+  const min=Math.min(...data),max=Math.max(...data),range=max-min||1;
+  const pts=data.map((v,i)=>`${((i/(data.length-1))*W).toFixed(1)},${(H-2-((v-min)/range)*(H-4)).toFixed(1)}`).join(' ');
+  const c=up?'var(--green)':'var(--red)';
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="1.4" opacity="0.85"/></svg>`;
+}
+function updateSidebarRow(c){
+  const up=c.curPrice>=c.prevPrice;
+  const pe=document.getElementById('crp-'+c.id);
+  const ce=document.getElementById('crc-'+c.id);
+  const row=document.getElementById('cr-'+c.id);
+  if(pe){pe.textContent='$'+fmtP(c.curPrice);pe.style.color=up?'var(--green)':'var(--red)';}
+  if(ce){ce.textContent=(c.chgPct>=0?'+':'')+c.chgPct.toFixed(2)+'%';ce.style.color=c.chgPct>=0?'var(--green)':'var(--red)';}
+  if(STATE.tick%3===0&&row){
+    const sparkDiv=row.querySelector('.cr-spark');
+    if(sparkDiv)sparkDiv.innerHTML=buildSparkSVG((STATE.histories[c.id]||[]).slice(-24),c.color,up);
+  }
+}
+
+// ─── CHART ────────────────────────────────────────────────────────────────────
+function drawChart(){
+  const canvas=document.getElementById('chartCanvas');
+  const wrap=document.getElementById('chart-canvas-wrap');
+  canvas.width=wrap.clientWidth; canvas.height=wrap.clientHeight;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  if(W<=0||H<=0)return;
+  const coin=STATE.coins.find(c=>c.id===STATE.selected);
+  if(!coin)return;
+  const data=STATE.histories[coin.id]||[];
+  if(data.length<2)return;
+  ctx.clearRect(0,0,W,H);
+  const PAD={top:8,right:8,bottom:24,left:58};
+  const cW=W-PAD.left-PAD.right,cH=H-PAD.top-PAD.bottom;
+  const min=Math.min(...data)*.998,max=Math.max(...data)*1.002,range=max-min||1;
+  const toX=i=>PAD.left+(i/(data.length-1))*cW;
+  const toY=v=>PAD.top+cH-((v-min)/range)*cH;
+  const up=coin.chgPct>=0,lc=up?'#3ddb7a':'#f06060';
+  // grid
+  ctx.strokeStyle='rgba(46,34,8,0.8)';ctx.lineWidth=0.5;
+  for(let i=0;i<=4;i++){const y=PAD.top+(i/4)*cH;ctx.beginPath();ctx.moveTo(PAD.left,y);ctx.lineTo(W-PAD.right,y);ctx.stroke();}
+  // y labels
+  ctx.fillStyle='rgba(122,100,64,0.9)';ctx.font='9px Courier New';ctx.textAlign='right';
+  for(let i=0;i<=4;i++) ctx.fillText('$'+fmtP(max-((max-min)/4)*i),PAD.left-4,PAD.top+(i/4)*cH+3);
+  // x labels
+  ctx.textAlign='center';
+  for(let i=0;i<=6;i++){const idx=Math.round((i/6)*(data.length-1));ctx.fillText((data.length-1-idx)+'s',toX(idx),H-PAD.bottom+14);}
+  // limit order price lines
+  STATE.limitOrders.filter(o=>o.coinId===STATE.selected).forEach(o=>{
+    const y=toY(o.targetPrice);
+    if(y<PAD.top||y>H-PAD.bottom)return;
+    const isBuy=o.type==='buy-limit';
+    ctx.setLineDash([4,4]);
+    ctx.strokeStyle=isBuy?'rgba(61,219,122,0.6)':'rgba(240,96,96,0.6)';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(PAD.left,y);ctx.lineTo(W-PAD.right,y);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=isBuy?'rgba(61,219,122,0.9)':'rgba(240,96,96,0.9)';
+    ctx.font='bold 9px Courier New';ctx.textAlign='left';
+    ctx.fillText((isBuy?'BL':'SL')+' $'+fmtP(o.targetPrice),PAD.left+3,y-2);
+  });
+  // fill
+  const grad=ctx.createLinearGradient(0,PAD.top,0,H-PAD.bottom);
+  grad.addColorStop(0,up?'rgba(61,219,122,0.25)':'rgba(240,96,96,0.22)');
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath();ctx.moveTo(toX(0),toY(data[0]));
+  for(let i=1;i<data.length;i++)ctx.lineTo(toX(i),toY(data[i]));
+  ctx.lineTo(toX(data.length-1),H-PAD.bottom);ctx.lineTo(toX(0),H-PAD.bottom);ctx.closePath();
+  ctx.fillStyle=grad;ctx.fill();
+  // line
+  ctx.beginPath();ctx.moveTo(toX(0),toY(data[0]));
+  for(let i=1;i<data.length;i++)ctx.lineTo(toX(i),toY(data[i]));
+  ctx.strokeStyle=lc;ctx.lineWidth=1.8;ctx.lineJoin='round';ctx.stroke();
+  // dot
+  const lx=toX(data.length-1),ly=toY(data[data.length-1]);
+  ctx.beginPath();ctx.arc(lx,ly,3.5,0,Math.PI*2);ctx.fillStyle=lc;ctx.fill();
+  ctx.fillStyle='rgba(10,8,2,0.85)';ctx.fillRect(lx+6,ly-9,50,16);
+  ctx.fillStyle=lc;ctx.font='bold 9px Courier New';ctx.textAlign='left';
+  ctx.fillText('$'+fmtP(coin.curPrice),lx+9,ly+3);
+}
+
+// ─── HEADER ───────────────────────────────────────────────────────────────────
+function updateHeader(){
+  const p=STATE.portfolio;
+  const portVal=STATE.coins.reduce((s,c)=>s+(p.holdings[c.id]||0)*c.curPrice,0);
+  const total=p.balance+portVal,pnl=total-10000,pct=(pnl/10000)*100;
+  const te=document.getElementById('hdr-total'),pe=document.getElementById('hdr-pnl');
+  document.getElementById('hdr-balance').textContent=fmtUSD(p.balance);
+  te.textContent=fmtUSD(total);te.style.color=pnl>=0?'var(--green)':'var(--red)';
+  pe.textContent=`${pnl>=0?'+':''}${fmtUSD(pnl)} (${pct>=0?'+':''}${pct.toFixed(2)}%)`;
+  pe.style.color=pnl>=0?'var(--green)':'var(--red)';
+}
+
+// ─── COIN HEADER ─────────────────────────────────────────────────────────────
+function updateCoinHeader(){
+  const coin=STATE.coins.find(c=>c.id===STATE.selected);
+  if(!coin)return;
+  document.getElementById('coin-title').textContent=coin.id;
+  document.getElementById('coin-fullname').textContent=coin.name;
+  const pb=document.getElementById('coin-price-big');
+  pb.textContent='$'+fmtP(coin.curPrice);pb.style.color=coin.chgPct>=0?'var(--green)':'var(--red)';
+  document.getElementById('unit-coin').textContent=coin.id;
+  document.getElementById('order-btn').textContent=(STATE.mode==='buy'?'BUY ':'SELL ')+coin.id;
+  const hist=STATE.histories[coin.id]||[];
+  document.getElementById('stat-high').textContent='$'+fmtP(hist.length?Math.max(...hist):0);
+  document.getElementById('stat-low').textContent='$'+fmtP(hist.length?Math.min(...hist):0);
+  const p=STATE.portfolio;
+  const holding=p.holdings[coin.id]||0,basis=p.costBasis[coin.id]||0;
+  document.getElementById('stat-basis').textContent=basis>0?'$'+fmtP(basis):'—';
+  document.getElementById('stat-holdval').textContent=fmtUSD(holding*coin.curPrice);
+  // badges
+  const badges=document.getElementById('coin-badges');
+  badges.innerHTML='';
+  const b1=el('span',{className:'badge',style:{background:coin.chgPct>=0?'#0d2e1a':'#2e0d0d',color:coin.chgPct>=0?'var(--green)':'var(--red)'}},
+    (coin.chgPct>=0?'+':'')+coin.chgPct.toFixed(2)+'%');
+  badges.appendChild(b1);
+  if(holding>0.0000001){
+    const pnl=holding*(coin.curPrice-basis);
+    badges.appendChild(el('span',{className:'badge',style:{background:'#1e1a0c',color:'var(--acc)'}},fmtAmt(holding)+' held'));
+    badges.appendChild(el('span',{className:'badge',style:{background:pnl>=0?'#0d2e1a':'#2e0d0d',color:pnl>=0?'var(--green)':'var(--red)'}},
+      'P&L '+(pnl>=0?'+':'')+fmtUSD(pnl)));
+  }
+  // if max mode, refresh preview
+  if(STATE.maxMode&&STATE.mode==='buy') updatePreview();
+}
+
+// ─── TICKER ───────────────────────────────────────────────────────────────────
+const TICKER_NODES={};
+function buildTicker(){
+  const track=document.getElementById('ticker-track');
+  track.innerHTML='';
+  [...COINS,...COINS].forEach((c,i)=>{
+    const pn=document.createTextNode('$'+fmtP(c.price));
+    const cn=document.createTextNode(' ▲0.00%   ');
+    const span=document.createElement('span');
+    span.className='tick-item';span.style.color='var(--green)';
+    span.appendChild(safeText(c.id+' '));span.appendChild(pn);span.appendChild(cn);
+    track.appendChild(span);
+    if(i<COINS.length)TICKER_NODES[c.id]={span,pn,cn};
+  });
+}
+function updateTickerPrices(){
+  STATE.coins.forEach(c=>{
+    const n=TICKER_NODES[c.id];if(!n)return;
+    const up=c.chgPct>=0;
+    n.pn.nodeValue='$'+fmtP(c.curPrice);
+    n.cn.nodeValue=' '+(up?'▲':'▼')+Math.abs(c.chgPct).toFixed(2)+'%   ';
+    n.span.style.color=up?'var(--green)':'var(--red)';
+  });
+}
+function animTicker(){
+  const track=document.getElementById('ticker-track');
+  const totalW=track.scrollWidth/2;
+  STATE.tickerOffset=(STATE.tickerOffset+0.5)%(totalW||1);
+  track.style.transform=`translateX(-${STATE.tickerOffset}px)`;
+  requestAnimationFrame(animTicker);
+}
+
+// ─── SENTIMENT ────────────────────────────────────────────────────────────────
+function updateSentiment(){
+  const s=STATE.sentiment,norm=Math.min(1,Math.max(0,(s+.35)/.7));
+  const bar=document.getElementById('sent-bar'),lbl=document.getElementById('sent-label');
+  let col,txt;
+  if(s>.10){col='var(--green)';txt='🚀 BULL';}
+  else if(s>.02){col='var(--green)';txt='BULL';}
+  else if(s<-.12){col='var(--red)';txt='💀 BEAR';}
+  else if(s<-.02){col='var(--red)';txt='BEAR';}
+  else{col='var(--acc)';txt='CHILL';}
+  bar.style.width=(norm*100).toFixed(0)+'%';bar.style.background=col;
+  lbl.textContent=txt;lbl.style.color=col;
+}
+
+// ─── HOLDINGS BAR ────────────────────────────────────────────────────────────
+function updateHoldings(){
+  const p=STATE.portfolio,bar=document.getElementById('holdings-bar');
+  const empty=document.getElementById('holdings-empty');
+  const entries=Object.entries(p.holdings).filter(([,v])=>v>0.0000001);
+  bar.querySelectorAll('.hold-chip').forEach(e=>e.remove());
+  if(!entries.length){if(empty)empty.style.display='';return;}
+  if(empty)empty.style.display='none';
+  entries.forEach(([id,amt])=>{
+    const c=STATE.coins.find(x=>x.id===id);if(!c)return;
+    const val=amt*c.curPrice,pnl=amt*(c.curPrice-(p.costBasis[id]||0));
+    const chip=document.createElement('div');chip.className='hold-chip';
+    chip.appendChild(safeText(id+': '+fmtAmt(amt)+' · '+fmtUSD(val)+' · '));
+    const ps=document.createElement('span');ps.style.color=pnl>=0?'var(--green)':'var(--red)';
+    ps.textContent=(pnl>=0?'+':'')+fmtUSD(pnl);chip.appendChild(ps);
+    bar.appendChild(chip);
+  });
+}
+
+// ─── NEWS ─────────────────────────────────────────────────────────────────────
+const newsItems=[
+  {txt:'Welcome to CapyMarket — where capybaras go to print money',pos:true},
+  {txt:'Starting balance: $10,000 CAPY Bucks. New: Limit Orders & Auto-MAX!',pos:true},
+];
+function addNews(txt,pos){
+  newsItems.unshift({txt:String(txt).slice(0,220),pos:!!pos});
+  if(newsItems.length>20)newsItems.pop();
+  renderNews();
+}
+function renderNews(){
+  const list=document.getElementById('news-list');list.innerHTML='';
+  newsItems.forEach(n=>{
+    const item=document.createElement('div');item.className='news-item';
+    const arrow=document.createElement('span');arrow.className='news-arrow';
+    arrow.style.color=n.pos?'var(--green)':'var(--red)';arrow.textContent=n.pos?'▲':'▼';
+    const txt=document.createElement('span');txt.style.color=n.pos?'var(--text)':'#fca5a5';
+    txt.textContent=n.txt;item.appendChild(arrow);item.appendChild(txt);list.appendChild(item);
+  });
+}
+renderNews();
+
+// ─── COIN SELECTION ───────────────────────────────────────────────────────────
+function selectCoin(id){
+  STATE.selected=id;
+  document.querySelectorAll('.coin-row').forEach(r=>r.classList.remove('active'));
+  const row=document.getElementById('cr-'+id);if(row)row.classList.add('active');
+  updateCoinHeader();drawChart();updatePreview();
+}
+
+// ─── ORDER MODE ───────────────────────────────────────────────────────────────
+function setMode(m){
+  STATE.mode=m;
+  document.getElementById('tab-buy').className='tab '+(m==='buy'?'tab-buy-active':'tab-inactive');
+  document.getElementById('tab-sell').className='tab '+(m==='sell'?'tab-sell-active':'tab-inactive');
+  const btn=document.getElementById('order-btn');
+  btn.className='btn '+(m==='buy'?'btn-buy':'btn-sell');
+  btn.textContent=(m==='buy'?'BUY ':'SELL ')+STATE.selected;
+  // MAX mode only makes sense for buy; clear it when switching to sell
+  if(m==='sell'&&STATE.maxMode) disableMax();
+  updatePreview();
+}
+
+// ─── MAX MODE ─────────────────────────────────────────────────────────────────
+// When MAX mode is active on a BUY, execution always uses the FULL current
+// balance at order time — so price ticks never leave money on the table.
+function toggleMax(){
+  if(STATE.maxMode) disableMax();
+  else enableMax();
+}
+function enableMax(){
+  STATE.maxMode=true;
+  const btn=document.getElementById('max-btn');
+  btn.classList.add('max-active');
+  const lbl=document.getElementById('max-mode-label');
+  lbl.style.display='flex';
+  // Fill input with current balance as a visual hint, but execution ignores this
+  const coin=STATE.coins.find(c=>c.id===STATE.selected);
+  const unit=document.getElementById('order-unit').value;
+  const inp=document.getElementById('order-amt');
+  inp.value=unit==='usd'?STATE.portfolio.balance.toFixed(2):(STATE.portfolio.balance/coin.curPrice).toFixed(6);
+  inp.style.opacity='0.5'; // dim to show it's overridden
+  updatePreview();
+}
+function disableMax(){
+  STATE.maxMode=false;
+  document.getElementById('max-btn').classList.remove('max-active');
+  document.getElementById('max-mode-label').style.display='none';
+  const inp=document.getElementById('order-amt');
+  inp.value='';inp.style.opacity='1';
+  document.getElementById('preview').textContent='';
+}
+// When user manually types, exit MAX mode
+function onAmtInput(){
+  if(STATE.maxMode) disableMax();
+  updatePreview();
+}
+function onUnitChange(){
+  if(STATE.maxMode) enableMax(); // recalculate hint for new unit
+  else updatePreview();
+}
+
+function updatePreview(){
+  const coin=STATE.coins.find(c=>c.id===STATE.selected);
+  const unit=document.getElementById('order-unit').value;
+  const prev=document.getElementById('preview');
+  if(!coin){prev.textContent='';return;}
+  if(STATE.mode==='buy'){
+    // MAX mode: show what will actually be spent at current price
+    const effectiveUSD=STATE.maxMode?STATE.portfolio.balance:safeAmt(document.getElementById('order-amt').value);
+    if(effectiveUSD===null){prev.textContent='';return;}
+    const coinAmt=effectiveUSD/coin.curPrice;
+    prev.textContent=`≈ ${fmtAmt(coinAmt)} ${coin.id} (${fmtUSD(effectiveUSD)})`;
+    if(STATE.maxMode) prev.textContent+=' ⚡';
+  } else {
+    const amt=safeAmt(document.getElementById('order-amt').value);
+    if(!amt){prev.textContent='';return;}
+    const usd=unit==='usd'?amt:amt*coin.curPrice;
+    prev.textContent=`≈ ${fmtUSD(usd)}`;
+  }
+}
+
+// ─── DO ORDER ────────────────────────────────────────────────────────────────
+function doOrder(){
+  if(STATE.orderLock)return;
+  STATE.orderLock=true;
+  try{ _execOrder(); } finally{ setTimeout(()=>{STATE.orderLock=false;},300); }
+}
+function _execOrder(){
+  const coin=STATE.coins.find(c=>c.id===STATE.selected);
+  const p=STATE.portfolio;
+  const unit=document.getElementById('order-unit').value;
+
+  if(STATE.mode==='buy'){
+    // ── SMART MAX: always use full current balance when in MAX mode ──────────
+    // This means a price tick between hitting MAX and clicking BUY never
+    // causes an "insufficient funds" error — we just spend what we actually have.
+    let usd;
+    if(STATE.maxMode){
+      usd=p.balance; // always current at execution time
+    } else {
+      const amt=safeAmt(document.getElementById('order-amt').value);
+      if(amt===null){showModal('⚠️ Invalid Amount','Enter a valid positive number.');return;}
+      usd=unit==='usd'?amt:amt*coin.curPrice;
+    }
+    if(usd<=0||!isFinite(usd)){showModal('⚠️ Nothing to Buy','Your balance is empty, fren.');return;}
+    // Clamp to balance (handles MAX mode + any tiny fp drift)
+    usd=Math.min(usd,p.balance);
+    const coinAmt=usd/coin.curPrice;
+    if(!isFinite(coinAmt)||coinAmt<=0){showModal('⚠️ Error','Could not compute order. Try again.');return;}
+    const prevH=p.holdings[coin.id]||0;
+    const newH=prevH+coinAmt;
+    p.costBasis[coin.id]=((p.costBasis[coin.id]||0)*prevH+usd)/newH;
+    p.holdings[coin.id]=newH;
+    p.balance=Math.max(0,p.balance-usd);
+    const modeLabel=STATE.maxMode?' [AUTO-MAX]':'';
+    addNews(`Bought ${fmtAmt(coinAmt)} $${coin.id} @ $${fmtP(coin.curPrice)}${modeLabel} 🚀`,true);
+  } else {
+    const amt=safeAmt(document.getElementById('order-amt').value);
+    if(amt===null){showModal('⚠️ Invalid Amount','Enter a valid positive number.');return;}
+    const execPrice=coin.curPrice;
+    const coinAmt=unit==='usd'?amt/execPrice:amt;
+    const usd=coinAmt*execPrice;
+    const curH=p.holdings[coin.id]||0;
+    if(coinAmt>curH){showModal('🚫 Nothing to Sell',`You only hold ${fmtAmt(curH)} $${coin.id}.`);return;}
+    p.holdings[coin.id]=Math.max(0,curH-coinAmt);
+    p.balance+=usd;
+    addNews(`Sold ${fmtAmt(coinAmt)} $${coin.id} for ${fmtUSD(usd)} 🤔`,true);
+  }
+
+  document.getElementById('order-amt').value='';
+  document.getElementById('preview').textContent='';
+  if(STATE.maxMode) disableMax();
+  updateHeader();updateHoldings();updateCoinHeader();
+}
+
+// ─── ALERT MODAL ─────────────────────────────────────────────────────────────
+function showModal(title,body){
+  document.getElementById('modal-title').textContent=title;
+  document.getElementById('modal-body').textContent=body;
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function closeModal(){ document.getElementById('modal-overlay').classList.remove('show'); }
+
+// ─── LIMIT ORDERS MODAL ───────────────────────────────────────────────────────
+function openLimitModal(){
+  // Populate coin dropdown
+  const sel=document.getElementById('lo-coin');
+  sel.innerHTML='';
+  STATE.coins.forEach(c=>{
+    const opt=document.createElement('option');
+    opt.value=c.id;opt.textContent=c.id+' — '+c.name;
+    if(c.id===STATE.selected)opt.selected=true;
+    sel.appendChild(opt);
+  });
+  updateLoHint();
+  updateLoBalanceHint();
+  renderOrderList();
+  document.getElementById('lo-overlay').classList.add('show');
+}
+function closeLimitModal(){ document.getElementById('lo-overlay').classList.remove('show'); }
+function closeLimitModalOutside(e){ if(e.target===document.getElementById('lo-overlay'))closeLimitModal(); }
+
+function updateLoHint(){
+  const type=document.getElementById('lo-type').value;
+  const coinId=document.getElementById('lo-coin')&&document.getElementById('lo-coin').value;
+  const coin=coinId?STATE.coins.find(c=>c.id===coinId):null;
+  const priceInput=safeAmt(document.getElementById('lo-price').value);
+  const hint=document.getElementById('lo-hint');
+  const amtLabel=document.getElementById('lo-amt-label');
+
+  if(type==='buy-limit'){
+    amtLabel.textContent='SPEND AMOUNT (USD)';
+    if(coin&&priceInput){
+      const diff=((priceInput-coin.curPrice)/coin.curPrice*100);
+      hint.textContent=`Current: $${fmtP(coin.curPrice)} · Target is ${diff>=0?'+':''}${diff.toFixed(2)}% from now`;
+      hint.style.color=priceInput<=coin.curPrice?'var(--green)':'var(--red)';
+    } else if(coin){
+      hint.textContent=`Current price: $${fmtP(coin.curPrice)} — set target BELOW this`;
+      hint.style.color='var(--muted)';
+    }
+  } else {
+    amtLabel.textContent='SELL AMOUNT (USD) or leave blank for all';
+    if(coin&&priceInput){
+      const diff=((priceInput-coin.curPrice)/coin.curPrice*100);
+      hint.textContent=`Current: $${fmtP(coin.curPrice)} · Stop at ${diff>=0?'+':''}${diff.toFixed(2)}% from now`;
+      hint.style.color=priceInput<=coin.curPrice?'var(--green)':'var(--red)';
+    } else if(coin){
+      hint.textContent=`Current price: $${fmtP(coin.curPrice)} — set stop BELOW this`;
+      hint.style.color='var(--muted)';
+    }
+  }
+}
+function updateLoBalanceHint(){
+  const h=document.getElementById('lo-balance-hint');
+  if(h) h.textContent='Balance: '+fmtUSD(STATE.portfolio.balance);
+}
+
+function placeOrder(){
+  const type=document.getElementById('lo-type').value;
+  const coinId=document.getElementById('lo-coin').value;
+  const coin=STATE.coins.find(c=>c.id===coinId);
+  const targetPrice=safeAmt(document.getElementById('lo-price').value);
+  const expirySecs=parseInt(document.getElementById('lo-expiry').value)||120;
+  const rawAmt=document.getElementById('lo-amt').value;
+
+  if(!coin) return;
+  if(!targetPrice){showModal('⚠️ Missing Target Price','Enter a target price for your limit order.');return;}
+
+  let usdAmt=null;
+  if(type==='buy-limit'){
+    usdAmt=safeAmt(rawAmt);
+    if(!usdAmt){showModal('⚠️ Missing Amount','Enter how much USD to spend.');return;}
+    if(usdAmt>STATE.portfolio.balance){showModal('💸 Not Enough','Order amount exceeds your balance.');return;}
+    if(targetPrice>=coin.curPrice){showModal('⚠️ Bad Target','Buy Limit target must be BELOW current price ($'+fmtP(coin.curPrice)+').');return;}
+  } else {
+    // stop-loss: usdAmt optional — null means "sell all holdings"
+    usdAmt=rawAmt?safeAmt(rawAmt):null;
+    if(targetPrice>=coin.curPrice){showModal('⚠️ Bad Target','Stop-Loss target must be BELOW current price ($'+fmtP(coin.curPrice)+').');return;}
+    const holding=STATE.portfolio.holdings[coinId]||0;
+    if(holding<=0){showModal('🚫 No Holdings','You have no '+coinId+' to protect with a stop-loss.');return;}
+  }
+
+  const order={
+    id: STATE.nextOrderId++,
+    type, coinId, targetPrice,
+    usdAmt,
+    expiresAt: Date.now()+expirySecs*1000,
+    placedAt: Date.now(),
+  };
+  STATE.limitOrders.push(order);
+  updateLimitBadge();
+  renderOrderList();
+
+  // Clear form
+  document.getElementById('lo-price').value='';
+  document.getElementById('lo-amt').value='';
+
+  const typeLabel=type==='buy-limit'?'Buy Limit':'Stop-Loss';
+  addNews(`📋 ${typeLabel} placed: ${coinId} @ $${fmtP(targetPrice)} — expires in ${fmtSecs(expirySecs)}`,true);
+  drawChart(); // show dashed line on chart
+}
+
+function cancelOrder(id){
+  const idx=STATE.limitOrders.findIndex(o=>o.id===id);
+  if(idx===-1)return;
+  const o=STATE.limitOrders[idx];
+  STATE.limitOrders.splice(idx,1);
+  updateLimitBadge();
+  renderOrderList();
+  addNews(`📋 Limit order cancelled: ${o.coinId} @ $${fmtP(o.targetPrice)}`,false);
+  drawChart();
+}
+
+function renderOrderList(){
+  const list=document.getElementById('lo-order-list');
+  const empty=document.getElementById('lo-empty');
+  list.innerHTML='';
+  if(!STATE.limitOrders.length){empty.style.display='';return;}
+  empty.style.display='none';
+  updateLoBalanceHint();
+  STATE.limitOrders.forEach(o=>{
+    const coin=STATE.coins.find(c=>c.id===o.coinId);
+    const secsLeft=Math.max(0,Math.round((o.expiresAt-Date.now())/1000));
+    const isBuy=o.type==='buy-limit';
+    const typeLabel=isBuy?'BUY LIMIT':'STOP-LOSS';
+    const typeClass=isBuy?'type-buy-limit':'type-stop-loss';
+    const currentPrice=coin?coin.curPrice:0;
+    const diff=((o.targetPrice-currentPrice)/currentPrice*100);
+
+    const row=document.createElement('div');row.className='lo-order-row';
+    const main=document.createElement('div');main.className='lo-order-main';
+
+    const typeSpan=el('span',{className:'lo-order-type '+typeClass},typeLabel);
+    const coinSpan=el('span',{className:'lo-order-coin'},o.coinId);
+    const detailSpan=el('span',{className:'lo-order-detail'},
+      `target $${fmtP(o.targetPrice)} (${diff>=0?'+':''}${diff.toFixed(1)}%) · `+
+      (o.usdAmt?fmtUSD(o.usdAmt):'all holdings'));
+
+    main.appendChild(typeSpan);main.appendChild(coinSpan);main.appendChild(detailSpan);
+
+    const right=document.createElement('div');right.style.textAlign='right';
+    const exp=el('div',{className:'lo-order-expires',id:'lo-exp-'+o.id},`⏱ ${fmtSecs(secsLeft)}`);
+    const cancelBtn=el('button',{className:'lo-cancel-btn'},'✕ Cancel');
+    cancelBtn.onclick=()=>cancelOrder(o.id);
+    right.appendChild(exp);right.appendChild(cancelBtn);
+
+    row.appendChild(main);row.appendChild(right);
+    list.appendChild(row);
+  });
+}
+
+function updateLimitBadge(){
+  const badge=document.getElementById('limit-badge');
+  const n=STATE.limitOrders.length;
+  if(n>0){badge.textContent=n;badge.style.display='block';}
+  else badge.style.display='none';
+}
+
+// ─── CHECK LIMIT ORDERS ───────────────────────────────────────────────────────
+function checkLimitOrders(){
+  const now=Date.now();
+  const filled=[],expired=[];
+
+  STATE.limitOrders.forEach(o=>{
+    // Expire check
+    if(now>=o.expiresAt){expired.push(o);return;}
+    const coin=STATE.coins.find(c=>c.id===o.coinId);
+    if(!coin)return;
+
+    if(o.type==='buy-limit' && coin.curPrice<=o.targetPrice){
+      filled.push({order:o,coin,reason:'buy-limit'});
+    } else if(o.type==='stop-loss' && coin.curPrice<=o.targetPrice){
+      filled.push({order:o,coin,reason:'stop-loss'});
+    }
+  });
+
+  // Execute fills
+  filled.forEach(({order:o,coin})=>{
+    const p=STATE.portfolio;
+    if(o.type==='buy-limit'){
+      const usd=Math.min(o.usdAmt,p.balance);
+      if(usd<=0){STATE.limitOrders=STATE.limitOrders.filter(x=>x.id!==o.id);return;}
+      const coinAmt=usd/coin.curPrice;
+      const prevH=p.holdings[coin.id]||0,newH=prevH+coinAmt;
+      p.costBasis[coin.id]=((p.costBasis[coin.id]||0)*prevH+usd)/newH;
+      p.holdings[coin.id]=newH;
+      p.balance=Math.max(0,p.balance-usd);
+      showToast(`✅ BUY LIMIT FILLED: +${fmtAmt(coinAmt)} ${coin.id} @ $${fmtP(coin.curPrice)}`,false);
+      addNews(`✅ Limit order FILLED: bought ${fmtAmt(coinAmt)} $${coin.id} @ $${fmtP(coin.curPrice)}`,true);
+    } else {
+      // stop-loss: sell amount or all
+      const curH=p.holdings[coin.id]||0;
+      const coinAmt=o.usdAmt?Math.min(o.usdAmt/coin.curPrice,curH):curH;
+      if(coinAmt<=0){STATE.limitOrders=STATE.limitOrders.filter(x=>x.id!==o.id);return;}
+      const usd=coinAmt*coin.curPrice;
+      p.holdings[coin.id]=Math.max(0,curH-coinAmt);
+      p.balance+=usd;
+      showToast(`🛑 STOP-LOSS TRIGGERED: sold ${fmtAmt(coinAmt)} ${coin.id} @ $${fmtP(coin.curPrice)}`,true);
+      addNews(`🛑 Stop-loss triggered: sold ${fmtAmt(coinAmt)} $${coin.id} @ $${fmtP(coin.curPrice)} — protected!`,false);
+    }
+    STATE.limitOrders=STATE.limitOrders.filter(x=>x.id!==o.id);
+    updateHeader();updateHoldings();updateCoinHeader();
+  });
+
+  // Handle expired
+  expired.forEach(o=>{
+    STATE.limitOrders=STATE.limitOrders.filter(x=>x.id!==o.id);
+    addNews(`⏱ Limit order expired: ${o.coinId} @ $${fmtP(o.targetPrice)} — never filled`,false);
+  });
+
+  if(filled.length||expired.length){
+    updateLimitBadge();
+    // Refresh modal list if open
+    if(document.getElementById('lo-overlay').classList.contains('show')) renderOrderList();
+    drawChart();
+  }
+
+  // Update countdown timers in modal
+  STATE.limitOrders.forEach(o=>{
+    const el=document.getElementById('lo-exp-'+o.id);
+    if(el) el.textContent='⏱ '+fmtSecs(Math.max(0,Math.round((o.expiresAt-Date.now())/1000)));
+  });
+}
+
+// ─── TOAST NOTIFICATION ───────────────────────────────────────────────────────
+let toastTimer=null;
+function showToast(msg,isRed){
+  const t=document.getElementById('fill-toast');
+  t.textContent=msg;
+  t.className='show'+(isRed?' red':'');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{t.className='';},4000);
+}
+
+// ─── PRICE ENGINE ────────────────────────────────────────────────────────────
+setInterval(()=>{
+  STATE.tick++;
+  STATE.sentAge++;
+  if(STATE.sentAge>18){
+    STATE.sentiment=STATE.sentiment*.55+(Math.random()-.47)*.35;
+    STATE.sentiment=Math.max(-.35,Math.min(.35,STATE.sentiment));
+    STATE.sentAge=0;
+  }
+  updateSentiment();
+
+  let evt=null;
+  if(STATE.tick%10===0&&Math.random()<.55){
+    evt=NEWS_POOL[Math.floor(Math.random()*NEWS_POOL.length)];
+    addNews(evt.t,evt.i>=0);
+  }
+
+  STATE.coins.forEach(c=>{
+    let extra=0;
+    if(evt){if(evt.c===null)extra=evt.i*.35;else if(evt.c===c.id)extra=evt.i;}
+    const drift=STATE.sentiment*.004+extra*.18;
+    const shock=(Math.random()-.49)*2.2;
+    const move=drift+c.vol*shock*.075;
+    c.prevPrice=c.curPrice;
+    c.curPrice=Math.max(c.initPrice*.04,c.curPrice*(1+move));
+    c.chgPct=((c.curPrice-c.initPrice)/c.initPrice)*100;
+    const hist=STATE.histories[c.id];
+    hist.push(c.curPrice);
+    if(hist.length>HIST_LEN)hist.shift();
+    updateSidebarRow(c);
+  });
+
+  // MAX mode: keep preview live
+  if(STATE.maxMode&&STATE.mode==='buy') updatePreview();
+
+  checkLimitOrders();
+  updateTickerPrices();
+  updateHeader();
+  updateCoinHeader();
+  updateHoldings();
+  drawChart();
+},850);
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+buildSidebar();
+buildTicker();
+animTicker();
+updateCoinHeader();
+updateHeader();
+
+const ro=new ResizeObserver(()=>drawChart());
+ro.observe(document.getElementById('chart-canvas-wrap'));
+
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
+  if(e.key==='b'||e.key==='B')setMode('buy');
+  if(e.key==='s'||e.key==='S')setMode('sell');
+  if(e.key==='l'||e.key==='L')openLimitModal();
+  if(e.key==='m'||e.key==='M')toggleMax();
+  if(e.key==='Enter')doOrder();
+  if(e.key==='Escape')closeLimitModal();
+});
+</script>
+</body>
+</html>
